@@ -29,6 +29,7 @@ namespace OldPhonePad.Core
         private const char BackspaceKey = '*';
         private const char SendKey = '#';
         private const char SpaceIndicator = ' ';
+        private const char ZeroKey = '0';
 
         /// <summary>
         /// Gets the character mapping for a specific key.
@@ -108,6 +109,18 @@ namespace OldPhonePad.Core
                     {
                         result.Length--;
                     }
+                }
+                else if (currentChar == ZeroKey)
+                {
+                    // Process any pending sequence first
+                    if (keySequence.Count > 0)
+                    {
+                        ProcessKeySequence(result, keySequence);
+                    }
+
+                    // Add a space directly
+                    result.Append(' ');
+                    previousKey = null;
                 }
                 else if (KeypadMapping.ContainsKey(currentChar))
                 {

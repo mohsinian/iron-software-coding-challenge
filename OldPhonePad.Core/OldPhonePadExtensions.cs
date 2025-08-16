@@ -9,7 +9,6 @@ namespace OldPhonePad.Core
     {
         public static bool IsValidOldPhonePadInput(string input)
         {
-            // Existing implementation is fine
             if (string.IsNullOrEmpty(input))
                 return false;
 
@@ -55,6 +54,20 @@ namespace OldPhonePad.Core
                 else if (currentChar == '*')
                 {
                     explanation.AppendLine($"  Step {stepNumber++}: Backspace key pressed");
+                }
+                // Special handling for zero key - each zero is processed individually
+                else if (currentChar == '0')
+                {
+                    // Process any pending sequence first
+                    if (currentSequence.Count > 0)
+                    {
+                        explanation.AppendLine($"  Step {stepNumber++}: New key pressed - processing '{string.Join("", currentSequence)}'");
+                        currentSequence.Clear();
+                    }
+
+                    // Explain the zero key press
+                    explanation.AppendLine($"  Step {stepNumber++}: Zero key pressed - adding a space character");
+                    previousKey = null;
                 }
                 else if (currentChar >= '0' && currentChar <= '9')
                 {

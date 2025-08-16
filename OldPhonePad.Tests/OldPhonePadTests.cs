@@ -301,5 +301,120 @@ namespace OldPhonePad.Tests
         }
 
         #endregion
+
+        #region Zero Key Specific Tests
+
+        [Fact]
+        public void OldPhonePad_MultipleZeroKeys_ProducesMultipleSpaces()
+        {
+            // Arrange
+            string input = "2000003#"; // Should produce "A     D"
+
+            // Act
+            string result = OldPhonePadConverter.OldPhonePad(input);
+
+            // Assert
+            Assert.Equal("A     D", result);
+        }
+
+        [Theory]
+        [InlineData("20#", "A ")]
+        [InlineData("200#", "A  ")]
+        [InlineData("2000#", "A   ")]
+        [InlineData("20000#", "A    ")]
+        public void OldPhonePad_IncreasingZeros_ProducesProportionalSpaces(string input, string expected)
+        {
+            // Act
+            string result = OldPhonePadConverter.OldPhonePad(input);
+
+            // Assert
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("222 0 222#", "C C")]  // C (pause) space (pause) C
+        [InlineData("2220222#", "C C")]    // C space C
+        public void OldPhonePad_ZerosVersusSpacePause_ProducesSimilarOutput(string input, string expected)
+        {
+            // Act
+            string result = OldPhonePadConverter.OldPhonePad(input);
+
+            // Assert
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void OldPhonePad_LongSequenceOfZeros_ProducesEquivalentSpaces()
+        {
+            // Arrange
+            string input = "20000000000000000003#"; // 2 followed by 18 zeros followed by 3
+
+            // Act
+            string result = OldPhonePadConverter.OldPhonePad(input);
+
+            // Assert
+            Assert.Equal(20, result.Length); // "A" + 18 spaces + "D" = 20 characters
+            Assert.Equal("A", result[0].ToString());
+            Assert.Equal("D", result[^1].ToString());
+
+            // Check that all characters between first and last are spaces
+            for (int i = 1; i < result.Length - 1; i++)
+            {
+                Assert.Equal(' ', result[i]);
+            }
+        }
+
+        #endregion
+
+        #region Zero Key Explanation Tests
+
+        [Fact]
+        public void ExplainConversion_MultipleZeros_ExplainsEachSeparately()
+        {
+            // Arrange
+            string input = "2000#";
+
+            // Act
+            string explanation = OldPhonePadExtensions.ExplainConversion(input);
+
+            // Assert
+            Assert.Contains("Zero key pressed", explanation);
+            Assert.Contains("Result: A   ", explanation);
+
+            // Count occurrences of "Zero key pressed" - should be 3
+            int count = 0;
+            int index = 0;
+            while ((index = explanation.IndexOf("Zero key pressed", index)) != -1)
+            {
+                count++;
+                index += "Zero key pressed".Length;
+            }
+
+            Assert.Equal(3, count);
+        }
+
+        [Theory]
+        [InlineData("20#", 1)]
+        [InlineData("200#", 2)]
+        [InlineData("2000#", 3)]
+        public void ExplainConversion_CountsZeroKeyPresses_Correctly(string input, int expectedZeroPresses)
+        {
+            // Act
+            string explanation = OldPhonePadExtensions.ExplainConversion(input);
+
+            // Count occurrences of "Zero key pressed"
+            int count = 0;
+            int index = 0;
+            while ((index = explanation.IndexOf("Zero key pressed", index)) != -1)
+            {
+                count++;
+                index += "Zero key pressed".Length;
+            }
+
+            // Assert
+            Assert.Equal(expectedZeroPresses, count);
+        }
+
+        #endregion
     }
 }
