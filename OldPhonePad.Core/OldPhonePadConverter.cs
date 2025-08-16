@@ -31,6 +31,23 @@ namespace OldPhonePad.Core
         private const char SpaceIndicator = ' ';
 
         /// <summary>
+        /// Gets the character mapping for a specific key.
+        /// </summary>
+        public static string GetKeyMapping(char key)
+        {
+            KeypadMapping.TryGetValue(key, out string? mapping);
+            return mapping ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Checks if the provided character has a key mapping.
+        /// </summary>
+        public static bool HasKeyMapping(char key)
+        {
+            return KeypadMapping.ContainsKey(key);
+        }
+
+        /// <summary>
         /// Converts an old phone keypad input string to the intended text message.
         /// </summary>
         /// <param name="input">The input string containing button presses, spaces for pauses,
@@ -153,20 +170,15 @@ namespace OldPhonePad.Core
     /// </summary>
     public static class OldPhonePadExtensions
     {
-        /// <summary>
-        /// Validates if the input string is in correct format for OldPhonePad conversion.
-        /// </summary>
-        /// <param name="input">The input string to validate.</param>
-        /// <returns>True if valid, false otherwise.</returns>
         public static bool IsValidOldPhonePadInput(string input)
         {
+            // Existing implementation is fine
             if (string.IsNullOrEmpty(input))
                 return false;
 
             if (!input.EndsWith('#'))
                 return false;
 
-            // Check all characters are valid
             foreach (char c in input)
             {
                 if (c != '#' && c != '*' && c != ' ' && (c < '0' || c > '9'))
@@ -176,10 +188,6 @@ namespace OldPhonePad.Core
             return true;
         }
 
-        /// <summary>
-        /// Provides a detailed explanation of how the input was processed.
-        /// Useful for debugging and understanding the conversion process.
-        /// </summary>
         public static string ExplainConversion(string input)
         {
             if (!IsValidOldPhonePadInput(input))
@@ -189,7 +197,7 @@ namespace OldPhonePad.Core
             explanation.AppendLine($"Input: {input}");
             explanation.AppendLine("Processing steps:");
 
-            string processInput = input.Substring(0, input.Length - 1);
+            string processInput = input[..^1];
             var currentSequence = new List<char>();
             char? previousKey = null;
             int stepNumber = 1;
@@ -234,5 +242,6 @@ namespace OldPhonePad.Core
             explanation.AppendLine($"Result: {OldPhonePadConverter.OldPhonePad(input)}");
             return explanation.ToString();
         }
+
     }
 }
