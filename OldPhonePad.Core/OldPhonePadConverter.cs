@@ -136,7 +136,7 @@ namespace OldPhonePad.Core
             // Clear the stack
             keySequence.Clear();
 
-            if (!KeypadMapping.TryGetValue(key, out string characters))
+            if (!KeypadMapping.TryGetValue(key, out string? characters) || string.IsNullOrEmpty(characters))
                 return;
 
             if (characters.Length == 0) return;
@@ -156,7 +156,7 @@ namespace OldPhonePad.Core
             if (sequence.Count == 0) return;
 
             char key = sequence[0];
-            if (!KeypadMapping.TryGetValue(key, out string characters))
+            if (!KeypadMapping.TryGetValue(key, out string? characters) || string.IsNullOrEmpty(characters))
                 return;
 
             if (characters.Length == 0) return;

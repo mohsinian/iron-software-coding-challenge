@@ -155,7 +155,7 @@ namespace OldPhonePad.Tests
         public void OldPhonePad_NullInput_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => OldPhonePadConverter.OldPhonePad(null));
+            Assert.Throws<ArgumentNullException>(() => OldPhonePadConverter.OldPhonePad(null!));
         }
 
         [Fact]
@@ -276,10 +276,10 @@ namespace OldPhonePad.Tests
         [InlineData(null, false)]
         [InlineData("223", false)] // Missing #
         [InlineData("22a3#", false)] // Invalid character
-        public void IsValidOldPhonePadInput_VariousInputs_ReturnsExpectedResult(string input, bool expected)
+        public void IsValidOldPhonePadInput_VariousInputs_ReturnsExpectedResult(string? input, bool expected)
         {
             // Act
-            bool result = OldPhonePadExtensions.IsValidOldPhonePadInput(input);
+            bool result = OldPhonePadExtensions.IsValidOldPhonePadInput(input!);
 
             // Assert
             Assert.Equal(expected, result);
