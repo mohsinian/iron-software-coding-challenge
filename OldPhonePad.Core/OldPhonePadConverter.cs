@@ -1,0 +1,235 @@
+﻿using System.Text;
+
+namespace OldPhonePad.Core
+{
+    /// <summary>
+    /// Converts old phone keypad input sequences to text messages.
+    /// Based on T9 input method used in old mobile phones.
+    /// </summary>
+    public class OldPhonePadConverter
+    {
+        /// <summary>
+        /// Mapping of phone keypad buttons to their corresponding characters.
+        /// Each key press cycles through the available characters for that button.
+        /// </summary>
+        private static readonly Dictionary<char, string> KeypadMapping = new()
+        {
+            { '0', " " },
+            { '1', "&'(" },
+            { '2', "ABC" },
+            { '3', "DEF" },
+            { '4', "GHI" },
+            { '5', "JKL" },
+            { '6', "MNO" },
+            { '7', "PQRS" },
+            { '8', "TUV" },
+            { '9', "WXYZ" }
+        };
+
+        private const char BackspaceKey = '*';
+        private const char SendKey = '#';
+        private const char SpaceIndicator = ' ';
+
+        /// <summary>
+        /// Converts an old phone keypad input string to the intended text message.
+        /// </summary>
+        /// <param name="input">The input string containing button presses, spaces for pauses, 
+        /// asterisks for backspace, and ending with '#' for send.</param>
+        /// <returns>The decoded text message.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when input format is invalid.</exception>
+        public static string OldPhonePad(string input)
+        {
+            if (input == null)
+                throw new ArgumentNullException(nameof(input), "Input cannot be null.");
+
+            if (string.IsNullOrEmpty(input))
+                throw new ArgumentException("Input cannot be empty.", nameof(input));
+
+            if (!input.EndsWith(SendKey))
+                throw new ArgumentException($"Input must end with '{SendKey}' (send button).", nameof(input));
+
+            // Remove the send key for processing
+            string processInput = input.Substring(0, input.Length - 1);
+
+            return ProcessInput(processInput);
+        }
+
+        /// <summary>
+        /// Processes the input string and converts it to text.
+        /// </summary>
+        private static string ProcessInput(string input)
+        {
+            var result = new StringBuilder();
+            var currentSequence = new List<char>();
+            char? previousKey = null;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                char currentChar = input[i];
+
+                if (currentChar == SpaceIndicator)
+                {
+                    // Space indicates a pause - process any pending sequence
+                    if (currentSequence.Count > 0)
+                    {
+                        AppendCharacter(result, currentSequence);
+                        currentSequence.Clear();
+                        previousKey = null;
+                    }
+                }
+                else if (currentChar == BackspaceKey)
+                {
+                    // Process any pending sequence first
+                    if (currentSequence.Count > 0)
+                    {
+                        AppendCharacter(result, currentSequence);
+                        currentSequence.Clear();
+                        previousKey = null;
+                    }
+
+                    // Remove last character if exists
+                    if (result.Length > 0)
+                    {
+                        result.Length--;
+                    }
+                }
+                else if (KeypadMapping.ContainsKey(currentChar))
+                {
+                    // Check if we're continuing with the same key or starting a new one
+                    if (previousKey.HasValue && previousKey.Value != currentChar)
+                    {
+                        // Different key pressed - process the previous sequence
+                        if (currentSequence.Count > 0)
+                        {
+                            AppendCharacter(result, currentSequence);
+                            currentSequence.Clear();
+                        }
+                    }
+
+                    currentSequence.Add(currentChar);
+                    previousKey = currentChar;
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid character '{currentChar}' in input. Only 0-9, *, #, and space are allowed.");
+                }
+            }
+
+            // Process any remaining sequence
+            if (currentSequence.Count > 0)
+            {
+                AppendCharacter(result, currentSequence);
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Appends the character corresponding to the key sequence to the result.
+        /// </summary>
+        private static void AppendCharacter(StringBuilder result, List<char> sequence)
+        {
+            if (sequence.Count == 0) return;
+
+            char key = sequence[0];
+            if (!KeypadMapping.TryGetValue(key, out string characters))
+                return;
+
+            if (characters.Length == 0) return;
+
+            // Calculate which character to use based on the number of presses
+            // Use modulo to cycle through available characters
+            int charIndex = (sequence.Count - 1) % characters.Length;
+            result.Append(characters[charIndex]);
+        }
+    }
+
+    /// <summary>
+    /// Extension methods for OldPhonePadConverter for additional functionality.
+    /// </summary>
+    public static class OldPhonePadExtensions
+    {
+        /// <summary>
+        /// Validates if the input string is in correct format for OldPhonePad conversion.
+        /// </summary>
+        /// <param name="input">The input string to validate.</param>
+        /// <returns>True if valid, false otherwise.</returns>
+        public static bool IsValidOldPhonePadInput(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return false;
+
+            if (!input.EndsWith('#'))
+                return false;
+
+            // Check all characters are valid
+            foreach (char c in input)
+            {
+                if (c != '#' && c != '*' && c != ' ' && (c < '0' || c > '9'))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Provides a detailed explanation of how the input was processed.
+        /// Useful for debugging and understanding the conversion process.
+        /// </summary>
+        public static string ExplainConversion(string input)
+        {
+            if (!IsValidOldPhonePadInput(input))
+                return "Invalid input format";
+
+            var explanation = new StringBuilder();
+            explanation.AppendLine($"Input: {input}");
+            explanation.AppendLine("Processing steps:");
+
+            string processInput = input.Substring(0, input.Length - 1);
+            var currentSequence = new List<char>();
+            char? previousKey = null;
+            int stepNumber = 1;
+
+            for (int i = 0; i < processInput.Length; i++)
+            {
+                char currentChar = processInput[i];
+
+                if (currentChar == ' ')
+                {
+                    if (currentSequence.Count > 0)
+                    {
+                        explanation.AppendLine($"  Step {stepNumber++}: Pause detected - processing '{string.Join("", currentSequence)}'");
+                        currentSequence.Clear();
+                        previousKey = null;
+                    }
+                }
+                else if (currentChar == '*')
+                {
+                    explanation.AppendLine($"  Step {stepNumber++}: Backspace key pressed");
+                }
+                else if (currentChar >= '0' && currentChar <= '9')
+                {
+                    if (previousKey.HasValue && previousKey.Value != currentChar)
+                    {
+                        if (currentSequence.Count > 0)
+                        {
+                            explanation.AppendLine($"  Step {stepNumber++}: New key pressed - processing '{string.Join("", currentSequence)}'");
+                            currentSequence.Clear();
+                        }
+                    }
+                    currentSequence.Add(currentChar);
+                    previousKey = currentChar;
+                }
+            }
+
+            if (currentSequence.Count > 0)
+            {
+                explanation.AppendLine($"  Step {stepNumber++}: End of input - processing '{string.Join("", currentSequence)}'");
+            }
+
+            explanation.AppendLine($"Result: {OldPhonePadConverter.OldPhonePad(input)}");
+            return explanation.ToString();
+        }
+    }
+}
