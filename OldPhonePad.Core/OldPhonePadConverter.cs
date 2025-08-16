@@ -146,26 +146,6 @@ namespace OldPhonePad.Core
             int charIndex = (pressCount - 1) % characters.Length;
             result.Append(characters[charIndex]);
         }
-
-        /// <summary>
-        /// Appends the character corresponding to the key sequence to the result.
-        /// Maintained for backward compatibility.
-        /// </summary>
-        private static void AppendCharacter(StringBuilder result, List<char> sequence)
-        {
-            if (sequence.Count == 0) return;
-
-            char key = sequence[0];
-            if (!KeypadMapping.TryGetValue(key, out string? characters) || string.IsNullOrEmpty(characters))
-                return;
-
-            if (characters.Length == 0) return;
-
-            // Calculate which character to use based on the number of presses
-            // Use modulo to cycle through available characters
-            int charIndex = (sequence.Count - 1) % characters.Length;
-            result.Append(characters[charIndex]);
-        }
     }
 
     /// <summary>
