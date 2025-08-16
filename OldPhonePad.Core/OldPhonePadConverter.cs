@@ -33,7 +33,7 @@ namespace OldPhonePad.Core
         /// <summary>
         /// Converts an old phone keypad input string to the intended text message.
         /// </summary>
-        /// <param name="input">The input string containing button presses, spaces for pauses, 
+        /// <param name="input">The input string containing button presses, spaces for pauses,
         /// asterisks for backspace, and ending with '#' for send.</param>
         /// <returns>The decoded text message.</returns>
         /// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
@@ -56,12 +56,12 @@ namespace OldPhonePad.Core
         }
 
         /// <summary>
-        /// Processes the input string and converts it to text.
+        /// Processes the input string and converts it to text using a stack-based approach.
         /// </summary>
         private static string ProcessInput(string input)
         {
             var result = new StringBuilder();
-            var currentSequence = new List<char>();
+            var keySequence = new Stack<char>();
             char? previousKey = null;
 
             for (int i = 0; i < input.Length; i++)
@@ -71,20 +71,18 @@ namespace OldPhonePad.Core
                 if (currentChar == SpaceIndicator)
                 {
                     // Space indicates a pause - process any pending sequence
-                    if (currentSequence.Count > 0)
+                    if (keySequence.Count > 0)
                     {
-                        AppendCharacter(result, currentSequence);
-                        currentSequence.Clear();
+                        ProcessKeySequence(result, keySequence);
                         previousKey = null;
                     }
                 }
                 else if (currentChar == BackspaceKey)
                 {
                     // Process any pending sequence first
-                    if (currentSequence.Count > 0)
+                    if (keySequence.Count > 0)
                     {
-                        AppendCharacter(result, currentSequence);
-                        currentSequence.Clear();
+                        ProcessKeySequence(result, keySequence);
                         previousKey = null;
                     }
 
@@ -100,14 +98,13 @@ namespace OldPhonePad.Core
                     if (previousKey.HasValue && previousKey.Value != currentChar)
                     {
                         // Different key pressed - process the previous sequence
-                        if (currentSequence.Count > 0)
+                        if (keySequence.Count > 0)
                         {
-                            AppendCharacter(result, currentSequence);
-                            currentSequence.Clear();
+                            ProcessKeySequence(result, keySequence);
                         }
                     }
 
-                    currentSequence.Add(currentChar);
+                    keySequence.Push(currentChar);
                     previousKey = currentChar;
                 }
                 else
@@ -117,16 +114,42 @@ namespace OldPhonePad.Core
             }
 
             // Process any remaining sequence
-            if (currentSequence.Count > 0)
+            if (keySequence.Count > 0)
             {
-                AppendCharacter(result, currentSequence);
+                ProcessKeySequence(result, keySequence);
             }
 
             return result.ToString();
         }
 
         /// <summary>
+        /// Processes the key sequence stack and appends the corresponding character to the result.
+        /// </summary>
+        private static void ProcessKeySequence(StringBuilder result, Stack<char> keySequence)
+        {
+            if (keySequence.Count == 0) return;
+
+            // Since all keys in the stack are the same, we can just peek at the top one
+            char key = keySequence.Peek();
+            int pressCount = keySequence.Count;
+
+            // Clear the stack
+            keySequence.Clear();
+
+            if (!KeypadMapping.TryGetValue(key, out string characters))
+                return;
+
+            if (characters.Length == 0) return;
+
+            // Calculate which character to use based on the number of presses
+            // Use modulo to cycle through available characters
+            int charIndex = (pressCount - 1) % characters.Length;
+            result.Append(characters[charIndex]);
+        }
+
+        /// <summary>
         /// Appends the character corresponding to the key sequence to the result.
+        /// Maintained for backward compatibility.
         /// </summary>
         private static void AppendCharacter(StringBuilder result, List<char> sequence)
         {
